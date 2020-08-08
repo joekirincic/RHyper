@@ -1,0 +1,7 @@
+
+HAPI_LIBS = "/Users/Joe/Library/Tableau Hyper API/cpp"
+
+CXX_STD = CXX11
+PKG_CXXFLAGS = -I../inst/include
+PKG_LIBS+=-L$(HAPI_LIBS) -ltableauhyperapi
+PKG_LIBS+=-Wl,-rpath,$(HAPI_LIBS),-rpath,$(abspath $(HAPI_LIBS))

@@ -1,0 +1,7 @@
+
+HAPI_LIBS = @HAPI_LIB_LOC@
+
+CXX_STD = @CPP_SPEC@
+PKG_CXXFLAGS = -I@HAPI_INCLUDES@
+PKG_LIBS+=-L$(HAPI_LIBS) -ltableauhyperapi
+PKG_LIBS+=-Wl,-rpath,$(HAPI_LIBS),-rpath,$(abspath $(HAPI_LIBS))

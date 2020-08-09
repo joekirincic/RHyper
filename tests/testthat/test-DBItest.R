@@ -6,4 +6,16 @@ DBItest::test_driver(
     NULL
   )
 )
-DBItest::test_connection()
+DBItest::test_connection(
+  skip = c(
+    "disconnect_invalid_connection",
+    NULL
+  )
+)
+DBItest::test_result(
+  run_only = c(
+    "send_query_trivial",
+    "send_query_closed_connection",
+
+  )
+)

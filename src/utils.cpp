@@ -4,6 +4,10 @@
 #include <string>
 #include <vector>
 #include "rhyper_types.h"
+#include <R.h>
+#include <Rinternals.h>
+
+
 
 // [[Rcpp::export]]
 Rcpp::CharacterVector hyper_quote_string(SEXP x){
@@ -31,6 +35,13 @@ Rcpp::CharacterVector list_tables(SEXP conn){
   }
   return Rcpp::wrap(tables);
 }
+
+// [[Rcpp::export]]
+SEXP is_null_pointer(SEXP conn){
+  int res_ = !R_ExternalPtrAddr(conn);
+  return Rf_ScalarLogical(res_);
+}
+
 
 // // [[Rcpp::export]]
 // SEXP table_exists(SEXP conn, SEXP name){

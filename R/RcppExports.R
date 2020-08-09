@@ -61,3 +61,7 @@ list_tables <- function(conn) {
     .Call(`_RHyper_list_tables`, conn)
 }
 
+is_null_pointer <- function(conn) {
+    .Call(`_RHyper_is_null_pointer`, conn)
+}
+

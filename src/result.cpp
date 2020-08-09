@@ -25,7 +25,14 @@ typedef std::shared_ptr<hyperapi::ResultIterator> ResultIteratorPtr;
 
 // [[Rcpp::export]]
 SEXP create_result(SEXP conn_, SEXP statement_) {
+
   Rcpp::XPtr<HyperConnectionPtr> con(conn_);
+
+  // If the connection is closed (i.e. `!isOpen`), exit.
+  if(!con->get()->isOpen()){
+    Rcpp::stop("The connection is closed.");
+  }
+
   std::string statement = Rcpp::as<std::string>(statement_);
   ResultPtr* res = new ResultPtr(new hyperapi::Result);
   **res = std::move((*con)->executeQuery(statement));

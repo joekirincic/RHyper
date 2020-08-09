@@ -50,7 +50,9 @@ setMethod("show", "HyperConnection", function(object){
 #'
 #' @export
 setMethod("dbDisconnect", "HyperConnection", function(conn){
-
+  if(is_null_pointer(conn@connection_ptr)){
+    warning("Invalid connection.")
+  }
   disconnect(conn@connection_ptr)
   terminate(conn@process_ptr)
 

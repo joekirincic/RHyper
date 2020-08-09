@@ -173,6 +173,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// is_null_pointer
+SEXP is_null_pointer(SEXP conn);
+RcppExport SEXP _RHyper_is_null_pointer(SEXP connSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type conn(connSEXP);
+    rcpp_result_gen = Rcpp::wrap(is_null_pointer(conn));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_RHyper_create_hyper_process", (DL_FUNC) &_RHyper_create_hyper_process, 1},
@@ -190,6 +201,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RHyper_has_completed", (DL_FUNC) &_RHyper_has_completed, 1},
     {"_RHyper_hyper_quote_string", (DL_FUNC) &_RHyper_hyper_quote_string, 1},
     {"_RHyper_list_tables", (DL_FUNC) &_RHyper_list_tables, 1},
+    {"_RHyper_is_null_pointer", (DL_FUNC) &_RHyper_is_null_pointer, 1},
     {NULL, NULL, 0}
 };
 

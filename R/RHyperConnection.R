@@ -26,6 +26,7 @@ setMethod("dbSendQuery", "HyperConnection", function(conn, statement, ...) {
 
   result_ptr <- create_result(conn = conn@connection_ptr, statement = statement)
   result_iterator <- create_result_iterator(result_ptr)
+  # .RHyperSession$Result$is_open <- TRUE
   .RHyperSession$Result$iterator <- result_iterator
 
   res <- new("HyperResult", result_ptr = result_ptr, ...)
@@ -50,11 +51,17 @@ setMethod("show", "HyperConnection", function(object){
 #'
 #' @export
 setMethod("dbDisconnect", "HyperConnection", function(conn){
+
   if(is_null_pointer(conn@connection_ptr)){
     warning("Invalid connection.")
   }
+
   disconnect(conn@connection_ptr)
   terminate(conn@process_ptr)
+
+  # if(.RHyperSession$Result$is_open){
+  #   warning("Connection closed but a result set is still open. Remeber to clear all result sets before something-something.")
+  # }
 
   return(invisible(TRUE))
 

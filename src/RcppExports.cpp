@@ -39,6 +39,17 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// is_ready
+bool is_ready(SEXP connection_ptr);
+RcppExport SEXP _RHyper_is_ready(SEXP connection_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type connection_ptr(connection_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(is_ready(connection_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // terminate
 void terminate(SEXP process_ptr);
 RcppExport SEXP _RHyper_terminate(SEXP process_ptrSEXP) {
@@ -189,6 +200,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RHyper_create_hyper_process", (DL_FUNC) &_RHyper_create_hyper_process, 1},
     {"_RHyper_create_hyper_connection", (DL_FUNC) &_RHyper_create_hyper_connection, 2},
     {"_RHyper_disconnect", (DL_FUNC) &_RHyper_disconnect, 1},
+    {"_RHyper_is_ready", (DL_FUNC) &_RHyper_is_ready, 1},
     {"_RHyper_terminate", (DL_FUNC) &_RHyper_terminate, 1},
     {"_RHyper_attach_database", (DL_FUNC) &_RHyper_attach_database, 2},
     {"_RHyper_detach_database", (DL_FUNC) &_RHyper_detach_database, 2},

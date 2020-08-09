@@ -31,10 +31,23 @@ SEXP create_hyper_connection(SEXP process_ptr, Rcpp::List database){
 void disconnect(SEXP connection_ptr){
   Rcpp::XPtr<HyperConnectionPtr> hc(connection_ptr);
   if(hc->get()->isOpen()){
+
+    if(!hc->get()->isReady()){
+      hc->get()->close();
+      Rcpp::warning("Connection is closed but a result set is still open.");
+      return;
+    }
+
     hc->get()->close();
     return;
   }
   Rcpp::warning("The connection is already closed.");
+}
+
+// [[Rcpp::export]]
+bool is_ready(SEXP connection_ptr){
+  Rcpp::XPtr<HyperConnectionPtr> hc(connection_ptr);
+  return hc->get()->isReady();
 }
 
 // [[Rcpp::export]]

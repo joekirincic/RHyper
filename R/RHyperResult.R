@@ -26,6 +26,9 @@ setMethod("dbFetch", "HyperResult", function(res, n = -1, ...) {
     out <- dplyr::as_tibble(fetch_n2(res@result_ptr, .RHyperSession$Result$iterator$iterator, .RHyperSession$Result$iterator$iteratorEnd, n))
   }
 
+  # if(dbHasCompleted(res)){
+  #   .RHyperSession$Result$is_open <- FALSE
+  # }
   # out <- dplyr::as_tibble(fetch_n2(res@result_ptr, .RHyperSession$Result$iterator$iterator, .RHyperSession$Result$iterator$iteratorEnd, n))
 
   return(out)
@@ -36,6 +39,8 @@ setMethod("dbFetch", "HyperResult", function(res, n = -1, ...) {
 setMethod("dbClearResult", "HyperResult", function(res, ...) {
 
   clear_result(res@result_ptr)
+  # Remember whenever the result set is tapped.
+  # .RHyperSession$Result$is_open <- FALSE
 
   return(invisible(TRUE))
 })

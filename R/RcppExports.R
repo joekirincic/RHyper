@@ -13,6 +13,10 @@ disconnect <- function(connection_ptr) {
     invisible(.Call(`_RHyper_disconnect`, connection_ptr))
 }
 
+is_ready <- function(connection_ptr) {
+    .Call(`_RHyper_is_ready`, connection_ptr)
+}
+
 terminate <- function(process_ptr) {
     invisible(.Call(`_RHyper_terminate`, process_ptr))
 }

@@ -12,7 +12,7 @@ if(.Platform$OS.type == "windows"){
   .RHyperSession$Connection <- NULL
   .RHyperSession$Result$is_open <- NULL
   .RHyperSession$Result$iterator <- NULL
-  Rcpp::registerPlugin(name = "hyprflex", plugin = hyprflex:::inlineCxxPlugin())
+  Rcpp::registerPlugin(name = "RHyper", plugin = RHyper:::inlineCxxPlugin())
   invisible()
 }
 

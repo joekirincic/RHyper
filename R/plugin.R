@@ -14,6 +14,6 @@ inlineCxxPlugin <- function(...){
   include.before = incl,
   ## FIND dll/so file at pkg root file.path(find.package('hyprflex'), "libs", .Platform$r_arch, glue("hyprflex{.Platform$dynlib.ext}")),
   libs = "/Users/Joe/Desktop/r-projects/hyprflex/lib/libtableauhyperapi.dylib",
-  package = "hyprflex"
+  package = "RHyper"
   )
 }

@@ -41,6 +41,18 @@ fetch_n2 <- function(res_, iter_, iter_end_, n_) {
     .Call(`_RHyper_fetch_n2`, res_, iter_, iter_end_, n_)
 }
 
+f <- function() {
+    .Call(`_RHyper_f`)
+}
+
+g <- function() {
+    .Call(`_RHyper_g`)
+}
+
+h <- function() {
+    .Call(`_RHyper_h`)
+}
+
 create_result <- function(conn_, statement_) {
     .Call(`_RHyper_create_result`, conn_, statement_)
 }

@@ -118,6 +118,36 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// f
+SEXP f();
+RcppExport SEXP _RHyper_f() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(f());
+    return rcpp_result_gen;
+END_RCPP
+}
+// g
+RObject g();
+RcppExport SEXP _RHyper_g() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(g());
+    return rcpp_result_gen;
+END_RCPP
+}
+// h
+DataFrame h();
+RcppExport SEXP _RHyper_h() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(h());
+    return rcpp_result_gen;
+END_RCPP
+}
 // create_result
 SEXP create_result(SEXP conn_, SEXP statement_);
 RcppExport SEXP _RHyper_create_result(SEXP conn_SEXP, SEXP statement_SEXP) {
@@ -207,6 +237,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RHyper_query_execute", (DL_FUNC) &_RHyper_query_execute, 2},
     {"_RHyper_fetch_all", (DL_FUNC) &_RHyper_fetch_all, 1},
     {"_RHyper_fetch_n2", (DL_FUNC) &_RHyper_fetch_n2, 4},
+    {"_RHyper_f", (DL_FUNC) &_RHyper_f, 0},
+    {"_RHyper_g", (DL_FUNC) &_RHyper_g, 0},
+    {"_RHyper_h", (DL_FUNC) &_RHyper_h, 0},
     {"_RHyper_create_result", (DL_FUNC) &_RHyper_create_result, 2},
     {"_RHyper_create_result_iterator", (DL_FUNC) &_RHyper_create_result_iterator, 1},
     {"_RHyper_clear_result", (DL_FUNC) &_RHyper_clear_result, 1},

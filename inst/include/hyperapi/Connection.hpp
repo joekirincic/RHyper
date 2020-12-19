@@ -28,7 +28,6 @@
 #include <mutex>
 #include <new>
 #include <string>
-#include <map>
 #include <hyperapi/hyperapi.h>
 
 namespace hyperapi {
@@ -63,7 +62,7 @@ class Connection final {
      *                    All parameter keys and values are expected to be passed in UTF-8 encoding.
      * \throw HyperException  If connecting failed.
      */
-   Connection(const Endpoint& endpoint, const std::map<std::string, std::string>& parameters = {});
+   Connection(const Endpoint& endpoint, const std::unordered_map<std::string, std::string>& parameters = {});
 
    /**
      * Connects to a Hyper endpoint and attaches to exactly one database.
@@ -80,7 +79,7 @@ class Connection final {
       const Endpoint& endpoint,
       const std::string& databasePath,
       CreateMode createMode = CreateMode::None,
-      const std::map<std::string, std::string>& parameters = {});
+      const std::unordered_map<std::string, std::string>& parameters = {});
 
    /**
      * Constructs a `Connection` object that does not represent a connection.

@@ -32,22 +32,18 @@ Hyper <- function() {
 #' @param drv An object created by \code{Hyper()}
 #' @rdname HyperDriver-class
 #' @export
-setMethod("dbConnect", "HyperDriver", function(drv, telemetry = FALSE, database = list(), bigint = "numeric", ...) {
+setMethod("dbConnect", "HyperDriver", function(drv, db = NULL, bigint = "numeric", ...) {
 
-  # Initialize Hyper Process.
-  process_ptr <- create_hyper_process(telemetry = telemetry)
-
-  # Attach Hyper files.
-  connection_ptr <- create_hyper_connection(process_ptr = process_ptr, database = database)
-
-  db <- if(is.null(names(database))){
-    db_names <- purrr::map_chr(database, ~fs::path_ext_remove(fs::path_file(.x)))
-    purrr::set_names(database, db_names) %>% list2env()
-  }else{
-    list2env(database)
+  if(!is.null(db)){
+    db <- RHyper:::sanitize_connection_info(db)
   }
 
-  new("HyperConnection", telemetry = telemetry, database = db, process_ptr = process_ptr, connection_ptr = connection_ptr, bigint = bigint, ...)
+  conn_ptr <- connect(unname(db), names(db))
+
+  out <- new("HyperConnection", ptr = conn_ptr, bigint = bigint, ...)
+
+  return(out)
+
 })
 
 #' @export
@@ -59,3 +55,26 @@ setMethod("dbGetInfo", "HyperDriver", function(dbObj, ...){
     client.version = NA_character_
   )
 })
+
+sanitize_connection_info <- function(path){
+
+  if(is.null(names(path))){
+    nm <- rep(NA_character_, length(path))
+  }else{
+    nm <- names(path)
+  }
+
+  iterables <- list(db_path = unname(path), is_aliased = rlang::have_name(path), db_alias = nm)
+
+  func <- function(db_path, is_aliased, db_alias){
+    if(is_aliased){
+      return(db_alias)
+    }
+    tools::file_path_sans_ext(basename(db_path))
+  }
+
+  aliases <- purrr::pmap_chr(.l = iterables, .f = func)
+
+  return(rlang::set_names(path, aliases))
+
+}

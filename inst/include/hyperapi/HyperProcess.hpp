@@ -103,11 +103,17 @@ class HyperProcess final {
    HyperProcess& operator=(HyperProcess&& other) noexcept;
 
    /**
-     * Shuts the Hyper process down.
-     * If `timeoutMs` >= 0, the process will be killed forcefully, if it hasn't finished its shutdown after `timeoutMs` milliseconds.
+     * Shuts down the Hyper process.
+     *
+     * If `timeoutMs` > 0ms, wait for Hyper to shut down gracefully. If the process is still running after a timeout of `timeoutMs` milliseconds,
+     * forcefully terminate the process and throw an exception.
+     *
+     * If `timeoutMs` < 0ms, wait indefinitely for Hyper to shut down.
+     *
+     * If `timeoutMs` == 0ms, immediately terminate Hyper forcefully. Does not throw if the process already exited with a non-zero exit code.
      *
      * \param timeoutMs The timeout in milliseconds
-     * \throw HyperException Thrown when the shutdown fails or the hyper process already exited with an non-zero exit code.
+     * \throw HyperException Thrown if there was an error stopping the process, if the process was forcefully killed after the timeout, or if the process already exited with a non-zero exit code.
      * \post !isOpen()
      */
    void shutdown(std::chrono::milliseconds timeoutMs = std::chrono::milliseconds(-1));

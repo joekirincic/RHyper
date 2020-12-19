@@ -16,7 +16,7 @@
 
 Hyper()
 
-\S4method{dbConnect}{HyperDriver}(drv, telemetry = FALSE, database = list(), bigint = "numeric", ...)
+\S4method{dbConnect}{HyperDriver}(drv, db = NULL, bigint = "numeric", ...)
 
 \S4method{dbGetInfo}{HyperDriver}(dbObj, ...)
 }

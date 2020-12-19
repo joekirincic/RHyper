@@ -4,14 +4,7 @@ if(.Platform$OS.type == "windows"){
   dyn.load(loc_hyper_exec)
 }
 
-.RHyperSession <- NULL
-
 .onLoad <- function(libname, pkgname){
-  .RHyperSession <<- new.env()
-  .RHyperSession$Process <- NULL
-  .RHyperSession$Connection <- NULL
-  .RHyperSession$Result$is_open <- NULL
-  .RHyperSession$Result$iterator <- NULL
   Rcpp::registerPlugin(name = "RHyper", plugin = RHyper:::inlineCxxPlugin())
   invisible()
 }

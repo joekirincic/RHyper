@@ -1,186 +1,113 @@
 #include "hyperapi/hyperapi.hpp"
+#include "result.h"
+#include "connection.h"
 #include <Rcpp.h>
-#include <string>
-#include <list>
-#include <forward_list>
-#include <vector>
-#include <tuple>
-#include <memory>
-#include <fstream>
-#include <iostream>
-#include "rhyper_types.h"
 
-typedef std::shared_ptr<hyperapi::HyperProcess> HyperProcessPtr;
-typedef std::shared_ptr<hyperapi::Connection> HyperConnectionPtr;
-typedef std::unique_ptr<hyperapi::Result> ResultPtr;
-typedef std::shared_ptr<hyperapi::ResultIterator> ResultIteratorPtr;
+typedef std::unique_ptr<RHyper::connection> conn_ptr;
+typedef std::shared_ptr<RHyper::result> result_ptr;
+typedef std::vector<std::unique_ptr<RHyper::base_column>> colset_t;
 
-// template <class T>
-// std::string to_string(const T& val){
-//   std::ostringstream sout;
-//   sout.imbue(std::locale::classic());
-//   sout << val;
-//   return sout.str();
-// }
+colset_t RHyper::result::infer_colset(){
+  auto schema = res_ptr->getSchema();
+  colset_t out;
 
-// [[Rcpp::export]]
-SEXP create_result(SEXP conn_, SEXP statement_) {
-
-  Rcpp::XPtr<HyperConnectionPtr> con(conn_);
-
-  // If the connection is closed (i.e. `!isOpen`), exit.
-  if(!con->get()->isOpen()){
-    Rcpp::stop("The connection is closed.");
+  for(int j = 0; j < schema.getColumnCount(); j++){
+    auto t = schema.getColumn(j).getType().getTag();
+    switch(t){
+    case hyperapi::TypeTag::Int:
+    {
+      auto col = std::unique_ptr<RHyper::base_column>(new RHyper::integer_column());
+      out.push_back(std::move(col));
+      break;
+    }
+    case hyperapi::TypeTag::Bool:
+    {
+      auto col = std::unique_ptr<RHyper::base_column>(new RHyper::bool_column());
+      out.push_back(std::move(col));
+      break;
+    }
+    case hyperapi::TypeTag::Numeric:
+    case hyperapi::TypeTag::BigInt:
+    case hyperapi::TypeTag::Double:
+    {
+      auto col = std::unique_ptr<RHyper::base_column>(new RHyper::double_column());
+      out.push_back(std::move(col));
+      break;
+    }
+    case hyperapi::TypeTag::Text:
+    {
+      auto col = std::unique_ptr<RHyper::base_column>(new RHyper::string_column());
+      out.push_back(std::move(col));
+      break;
+    }
+    case hyperapi::TypeTag::Date:
+    {
+      auto col = std::unique_ptr<RHyper::date_column>(new RHyper::date_column());
+      out.push_back(std::move(col));
+      break;
+    }
+    case hyperapi::TypeTag::Timestamp:
+    {
+      auto col = std::unique_ptr<RHyper::timestamp_column>(new RHyper::timestamp_column());
+      out.push_back(std::move(col));
+    }
+    default:
+    {
+      Rcpp::stop("Unsupported type.");
+    }
+    };
   }
+  return out;
+};
 
-  std::string statement = Rcpp::as<std::string>(statement_);
-  ResultPtr* res = new ResultPtr(new hyperapi::Result);
-  **res = std::move((*con)->executeQuery(statement));
-  // hyperapi::Result res = hc->get()->executeQuery(statement_);
-  // hyperapi::Result* res_ = new hyperapi::Result;
-  // *res_ = std::move(res);
-  return Rcpp::XPtr<ResultPtr>(res, true);
-}
-
-// [[Rcpp::export]]
-SEXP create_result_iterator(SEXP res_) {
-  Rcpp::XPtr<ResultPtr> res(res_);
-  ResultIteratorPtr* iter = new ResultIteratorPtr(new hyperapi::ResultIterator((**res), hyperapi::IteratorBeginTag()));
-  ResultIteratorPtr* iterEnd = new ResultIteratorPtr(new hyperapi::ResultIterator((**res), hyperapi::IteratorEndTag()));
-  auto out = Rcpp::List::create(
-    Rcpp::Named("iterator") = Rcpp::XPtr<ResultIteratorPtr>(iter, true),
-    Rcpp::Named("iteratorEnd") = Rcpp::XPtr<ResultIteratorPtr>(iterEnd, true)
-  );
+std::vector<std::string> RHyper::result::get_column_names(){
+  auto schema = res_ptr->getSchema();
+  std::vector<std::string> out;
+  for(auto col: schema.getColumns()){
+    out.push_back(col.getName().getUnescaped());
+  }
   return out;
 }
 
-// // [[Rcpp::export]]
-// Rcpp::List fetch_all(SEXP res) {
-//
-//   Rcpp::XPtr<hyperapi::Result> hr(res);
-//   int ncols = hr->getSchema().getColumnCount();
-//   std::forward_list<std::vector<std::string>> data;
-//
-//   Rcpp::CharacterVector cols;
-//   Rcpp::CharacterVector col_types;
-//
-//   for(auto col: hr->getSchema().getColumns()){
-//     Rcpp::String col_name = Rcpp::wrap(col.getName().getUnescaped());
-//     Rcpp::String col_type = Rcpp::wrap(col.getType().toString());
-//     cols.push_back(col_name);
-//     col_types.push_back(col_type);
-//   }
-//
-//   for(const hyperapi::Row& row : *hr){
-//     std::vector<std::string> r;
-//     for(const hyperapi::Value& val: row){
-//       r.push_back(to_string(val));
-//     }
-//     data.push_front(r);
-//     //data.emplace_back(r);
-//   }
-//
-//   // Rcpp::Rcout << "The list is " << data.size() << " rows deep." << std::endl;
-//
-//   if(data.empty()){
-//     std::vector<std::string> r;
-//     for(int i = 0; i < ncols; i++){
-//       r.push_back("NULL");
-//     }
-//     data.push_front(r);
-//   }
-//
-//   Rcpp::List out = Rcpp::wrap(data);
-//
-//   Rcpp::Environment purrr_pkg = Rcpp::Environment::namespace_env("purrr");
-//   Rcpp::Environment readr_pkg = Rcpp::Environment::namespace_env("readr");
-//   Rcpp::Environment hyprflex_pkg = Rcpp::Environment::namespace_env("hyprflex");
-//   Rcpp::Function transpose_fn = purrr_pkg["transpose"];
-//   Rcpp::Function flatten_chr_fn = purrr_pkg["flatten_chr"];
-//   Rcpp::Function map_df_fn = purrr_pkg["map_df"];
-//   Rcpp::Function map2_df_fn = purrr_pkg["map2_df"];
-//   // Rcpp::Function parse_guess_fn = readr_pkg["parse_guess"];
-//   Rcpp::Function hyper_to_r_fn = hyprflex_pkg["hyper_to_r"];
-//
-//   out = transpose_fn(out);
-//   out.names() = cols;
-//   out = map_df_fn(out, flatten_chr_fn);
-//   out = map2_df_fn(out, col_types, hyper_to_r_fn);
-//
-//   return out;
-// }
-
-// // [[Rcpp::export]]
-// Rcpp::List fetch_n(SEXP res, SEXP n) {
-//
-//   Rcpp::XPtr<hyperapi::Result> hr(res);
-//   int n_ = Rcpp::as<int>(n);
-//   int ncols = hr->getSchema().getColumnCount();
-//   std::list<std::vector<std::string>> data;
-//
-//   Rcpp::CharacterVector cols;
-//   Rcpp::CharacterVector col_types;
-//
-//   for(auto col: hr->getSchema().getColumns()){
-//     Rcpp::String col_name = Rcpp::wrap(col.getName().getUnescaped());
-//     Rcpp::String col_type = Rcpp::wrap(col.getType().toString());
-//     cols.push_back(col_name);
-//     col_types.push_back(col_type);
-//   }
-//
-//   int i = 0;
-//
-//   for(const hyperapi::Row& row : *hr){
-//     if(i == n_){ break; }
-//     std::vector<std::string> r;
-//     for(const hyperapi::Value& val: row){
-//       r.push_back(to_string(val));
-//     }
-//     data.emplace_back(r);
-//     i++;
-//   }
-//
-//   // Rcpp::Rcout << "The list is " << data.size() << " rows deep." << std::endl;
-//
-//   if(data.size() == 0){
-//     std::vector<std::string> r;
-//     for(int i = 0; i < ncols; i++){
-//       r.push_back("NULL");
-//     }
-//     data.emplace_back(r);
-//   }
-//
-//   Rcpp::List out = Rcpp::wrap(data);
-//
-//   Rcpp::Environment purrr_pkg = Rcpp::Environment::namespace_env("purrr");
-//   Rcpp::Environment readr_pkg = Rcpp::Environment::namespace_env("readr");
-//   Rcpp::Environment hyprflex_pkg = Rcpp::Environment::namespace_env("hyprflex");
-//   Rcpp::Function transpose_fn = purrr_pkg["transpose"];
-//   Rcpp::Function flatten_chr_fn = purrr_pkg["flatten_chr"];
-//   Rcpp::Function map_df_fn = purrr_pkg["map_df"];
-//   Rcpp::Function map2_df_fn = purrr_pkg["map2_df"];
-//   // Rcpp::Function parse_guess_fn = readr_pkg["parse_guess"];
-//   Rcpp::Function hyper_to_r_fn = hyprflex_pkg["hyper_to_r"];
-//
-//   out = transpose_fn(out);
-//   out.names() = cols;
-//   out = map_df_fn(out, flatten_chr_fn);
-//   out = map2_df_fn(out, col_types, hyper_to_r_fn);
-//
-//   return out;
-// }
-
 // [[Rcpp::export]]
-void clear_result(SEXP res_){
-  Rcpp::XPtr<ResultPtr> res(res_);
-  res->get()->close();
+SEXP create_result2(SEXP conn_, SEXP statement_){
+  auto conn = Rcpp::XPtr<conn_ptr>(conn_).get();
+  std::string statement = Rcpp::as<std::string>(statement_);
+  result_ptr* out = new result_ptr(new RHyper::result());
+  *out = conn->get()->execute_query(statement);
+  return Rcpp::XPtr<result_ptr>(out, true);
 }
 
 // [[Rcpp::export]]
-SEXP has_completed(SEXP res_){
+void clear_result2(SEXP res_){
+  auto res = Rcpp::XPtr<result_ptr>(res_);
+  res.release();
+}
 
-  Rcpp::XPtr<ResultPtr> res(res_);
-  bool is_open = res->get()->isOpen();
-  return Rcpp::wrap(!is_open);
+// [[Rcpp::export]]
+Rcpp::List fetch_rows(SEXP res_, Rcpp::Nullable<int> n_ = R_NilValue){
+  auto res = Rcpp::XPtr<result_ptr>(res_);
+  if(n_.isNull()){
+    auto out = res->get()->fetch();
+    return out;
+  }else{
+    int n = Rcpp::as<int>(n_);
+    auto out = res->get()->fetch(n);
+    return out;
+  }
+}
 
+// [[Rcpp::export]]
+SEXP has_completed2(SEXP res_){
+
+  Rcpp::XPtr<result_ptr> res(res_);
+  bool out = res->get()->is_tapped();
+  return Rcpp::wrap(out);
+
+}
+
+// [[Rcpp::export]]
+bool is_valid_result(SEXP res_){
+  auto res = Rcpp::XPtr<result_ptr>(res_).get();
+  return res;
 }

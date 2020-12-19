@@ -9,10 +9,7 @@ setClass(
   "HyperConnection",
   contains = "DBIConnection",
   slots = list(
-    telemetry = "logical",
-    database = "environment",
-    process_ptr = "externalptr",
-    connection_ptr = "externalptr",
+    ptr = "externalptr",
     bigint = "character"
   )
 )
@@ -22,18 +19,11 @@ setClass(
 #' @export
 setMethod("dbSendQuery", "HyperConnection", function(conn, statement, ...) {
 
-  # release_all(conn = conn)
+  result_ptr <- create_result2(conn = conn@ptr, statement = statement)
 
-  result_ptr <- create_result(conn = conn@connection_ptr, statement = statement)
-  result_iterator <- create_result_iterator(result_ptr)
-  # .RHyperSession$Result$is_open <- TRUE
-  .RHyperSession$Result$iterator <- result_iterator
+  res <- new("HyperResult", ptr = result_ptr, ...)
 
-  res <- new("HyperResult", result_ptr = result_ptr, ...)
-
-  # conn@result$active <- res
-
-  res
+  return(res)
 })
 
 #' Show details about a Hyper Connection.
@@ -52,19 +42,9 @@ setMethod("show", "HyperConnection", function(object){
 #' @export
 setMethod("dbDisconnect", "HyperConnection", function(conn){
 
-  if(is_null_pointer(conn@connection_ptr)){
-    warning("Invalid connection.")
-  }
-
-  disconnect(conn@connection_ptr)
-  terminate(conn@process_ptr)
-
-  # if(.RHyperSession$Result$is_open){
-  #   warning("Connection closed but a result set is still open. Remeber to clear all result sets before something-something.")
-  # }
+  disconnect(conn@ptr)
 
   return(invisible(TRUE))
-
 })
 
 
@@ -72,7 +52,7 @@ setMethod("dbDisconnect", "HyperConnection", function(conn){
 #' @export
 setMethod("dbListTables", "HyperConnection", function(conn, ...){
 
-  tables <- list_tables(conn@connection_ptr)
+  tables <- list_tables(conn@ptr)
 
   return(tables)
 
@@ -113,21 +93,24 @@ get_data_type <- function(obj) {
 }
 
 #' @export
-setMethod("dbWriteTable", c("HyperConnection", "character", "data.frame"), function(conn, name, value, ...){
+setMethod("dbWriteTable", c("HyperConnection", "character", "data.frame"), function(conn, name, value, ..., row.names = FALSE, overwrite = FALSE, append = FALSE, temporary = FALSE){
 
   name_escaped <- DBI::dbQuoteIdentifier(conn, name)
 
   create_statement <- DBI::sqlCreateTable(
     conn,
     name_escaped,
-    fields = DBI::dbDataType(conn, value)
+    fields = DBI::dbDataType(conn, value),
+    row.names = FALSE
   )
 
-  query_execute(conn@connection_ptr, create_statement)
+  execute_command(conn@ptr, create_statement)
 
-  insert_statement <- DBI::sqlAppendTable(con = conn, table = name_escaped, values = value)
+  escaped_value <- DBI::sqlData(con = conn, name = name_escaped, row.names = FALSE)
 
-  query_execute(conn@connection_ptr, insert_statement)
+  insert_statement <- DBI::sqlAppendTable(con = conn, table = name_escaped, values = escaped_value, row.names = FALSE)
+
+  execute_command(conn@ptr, insert_statement)
 
   return(TRUE)
 
@@ -147,7 +130,7 @@ setMethod("dbRemoveTable", c("HyperConnection", "character"), function(conn, nam
 #' @export
 setMethod("dbExecute", c("HyperConnection", "character"), function(conn, statement, ...){
 
-  query_execute(conn@connection_ptr, statement)
+  execute_command(conn@ptr, statement)
 
   invisible(TRUE)
 
@@ -173,9 +156,7 @@ setMethod("dbAttachDatabase", c("HyperConnection", "character", "character"), fu
 
   nm <- if(is.na(name)){ fs::path_ext_remove(fs::path_file(db_file)) }else{ name }
 
-  attach_database(conn@connection_ptr, db_file)
-
-  conn@database[[nm]] <- db_file
+  attach_database(conn@ptr, db_file)
 
 })
 
@@ -184,12 +165,13 @@ setMethod("dbAttachDatabase", c("HyperConnection", "character", "character"), fu
 #' @export
 setMethod("dbDetachDatabase", c("HyperConnection", "character"), function(conn, name, ...) {
 
-  # db_name <- fs::path_ext_remove(fs::path_file(db_file))
+  detach_database(conn@ptr, name)
 
-  detach_database(conn@connection_ptr, name)
+})
 
-  rm(list = name, envir = conn@database)
-
+#' @export
+setMethod("dbIsValid", "HyperConnection", function(dbObj, ...) {
+  is_valid_connection(dbObj@ptr)
 })
 
 #' @export

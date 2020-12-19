@@ -7,12 +7,13 @@
 setClass(
   "HyperResult",
   contains = "DBIResult",
-  slots = list(result_ptr = "externalptr")
+  slots = list(ptr = "externalptr")
 )
 
 #' Retrieve records from Hyper query
 #' @export
 setMethod("dbGetRowsAffected", "HyperResult", function(res, ...) {
+  #TODO: Actually fill this out.
   NA_real_
 })
 
@@ -20,16 +21,13 @@ setMethod("dbGetRowsAffected", "HyperResult", function(res, ...) {
 #' @export
 setMethod("dbFetch", "HyperResult", function(res, n = -1, ...) {
 
-  if(n == -1){
-    out <- fetch_all(res = res@result_ptr)
-  }else{
-    out <- dplyr::as_tibble(fetch_n2(res@result_ptr, .RHyperSession$Result$iterator$iterator, .RHyperSession$Result$iterator$iteratorEnd, n))
+  valid_n <- is_valid_n(n)
+
+  if(!valid_n){
+    stop("`n` must be a single whole number >= -1.")
   }
 
-  # if(dbHasCompleted(res)){
-  #   .RHyperSession$Result$is_open <- FALSE
-  # }
-  # out <- dplyr::as_tibble(fetch_n2(res@result_ptr, .RHyperSession$Result$iterator$iterator, .RHyperSession$Result$iterator$iteratorEnd, n))
+  out <- fetch_rows(res_ = res@ptr, n_ = n) %>% as.data.frame()
 
   return(out)
 
@@ -38,57 +36,41 @@ setMethod("dbFetch", "HyperResult", function(res, n = -1, ...) {
 #' @export
 setMethod("dbClearResult", "HyperResult", function(res, ...) {
 
-  clear_result(res@result_ptr)
-  # Remember whenever the result set is tapped.
-  # .RHyperSession$Result$is_open <- FALSE
+  clear_result2(res@ptr)
 
   return(invisible(TRUE))
+
 })
 
 #' @export
 setMethod("dbHasCompleted", "HyperResult", function(res, ...) {
 
-  out <- has_completed(res@result_ptr)
+  out <- has_completed2(res@ptr)
 
   return(out)
 
 })
 
 #' @export
-hyper_to_r <- function(column, column_type){
+setMethod("dbIsValid", "HyperResult", function(dbObj, ...){
+  is_valid_result(dbObj@ptr)
+})
 
-  na_vals <- c("", "NA", "NULL")
 
-  switch (column_type,
-    "DATE" = readr::parse_date(column, na = na_vals),
-    "TEXT" = readr::parse_character(column, na = na_vals),
-    "TIMESTAMP" = readr::parse_datetime(column, na = na_vals),
-    "TIMESTAMPTZ" = readr::parse_datetime(column, na = na_vals),
-    "TIME" = readr::parse_time(column, na = na_vals),
-    "BIGINT" = readr::parse_number(column, na = na_vals),
-    "INTEGER" = readr::parse_integer(column, na = na_vals),
-    "DOUBLE PRECISION" = readr::parse_double(column, na = na_vals),
-    "BOOLEAN" = readr::parse_logical(column, na = na_vals),
-    stop("Unsupported type", call. = FALSE)
-  )
+is_valid_n <- function(x){
 
-}
-
-#' @export
-#' @keywords internal
-release_all <- function(conn){
-  # objs <- mget(ls(), envir = globalenv()) %>% purrr::keep(.p = ~isS4(.x)) %>% purrr::keep(.p = ~(class(.x) == "HyperResult"))
-  # if(length(objs) >= 1){
-  #   message("Active HyperResult(s) found. Closing others before execution...")
-  #   purrr::walk(objs, ~DBI::dbClearResult(.x))
-  # }
-  objs <- as.list(conn@result)
-
-  has_open_results <- if(length(objs) == 0){ FALSE }else{ TRUE }
-
-  if(has_open_results){
-    purrr::walk(objs, ~DBI::dbClearResult(.x))
+  if(length(x) != 1L){
+    return(FALSE)
   }
 
-}
+  is_na <- is.na(x)
+  is_less_than_negative_one <- x < -1
+  is_not_whole_number <- !is_whole_number(x)
 
+  if(is_na | is_less_than_negative_one | is_not_whole_number){
+    return(FALSE)
+  }
+
+  return(TRUE)
+
+}

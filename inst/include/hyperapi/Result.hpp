@@ -31,6 +31,10 @@
 #include <iterator>
 #include <string>
 
+namespace RHyper {
+class base_column;
+}
+
 namespace hyperapi {
 
 class ChunkIterator;
@@ -99,6 +103,8 @@ class Value final {
 
    /** Stream output operator */
    friend std::ostream& operator<<(std::ostream& os, const Value& value);
+
+   friend class RHyper::base_column;
 
    /** Comparison operator */
    friend bool operator==(const Value& lhs, const Value& rhs) noexcept { return lhs.value.value == rhs.value.value; }
@@ -269,14 +275,14 @@ class Result final {
      */
    explicit Result(hyper_rowset_t* rowset, Connection& conn);
 
+   /** Get the next chunk */
+   Chunk getNextChunk();
+
    /// The underlying handle.
    hyper_rowset_t* rowset = nullptr;
 
    /// The connection
    Connection* conn = nullptr;
-
-   /** Get the next chunk */
-   Chunk getNextChunk();
 
    /// The schema of the result.
    ResultSchema schema;

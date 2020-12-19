@@ -12,8 +12,8 @@ if(!(os %in% c("Linux", "Windows"))){
 # Define the location of the Hyper API.
 define(HAPI_LIB_LOC = hapi_lib_loc)
 
-# Require C++11
-define(CPP_SPEC = "CXX11")
+# Require C++17
+define(CPP_SPEC = "CXX17")
 
 # Define the location of the Hyper API header files.
 hapi_includes_loc <- file.path("..", "inst", "include")

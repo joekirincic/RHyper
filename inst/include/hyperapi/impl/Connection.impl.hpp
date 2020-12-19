@@ -30,12 +30,12 @@ inline Connection::Connection(Connection&& other) noexcept
    : m_handle(internal::exchange(other.m_handle, nullptr)), m_catalog(new Catalog(*this)) {
 }
 
-inline Connection::Connection(const Endpoint& endpoint, const std::map<std::string, std::string>& parameters)
+inline Connection::Connection(const Endpoint& endpoint, const std::unordered_map<std::string, std::string>& parameters)
    : Connection(endpoint, std::string{}, CreateMode::None, parameters) {
 }
 
 inline Connection::Connection(
-   const Endpoint& endpoint, const std::string& databasePath, CreateMode createMode, const std::map<std::string, std::string>& parameters)
+   const Endpoint& endpoint, const std::string& databasePath, CreateMode createMode, const std::unordered_map<std::string, std::string>& parameters)
    : m_catalog(new Catalog(*this)) {
    internal::Parameters p = internal::createConnectionParameters(nullptr);
 

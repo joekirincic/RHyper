@@ -1,7 +1,7 @@
 Package: RHyper
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
+Title: A DBI interface for Tableau's Hyper Data Engine.
+Version: 0.0.0.9000
 Author: Joe Kirincic
 Maintainer: Joe Kirincic <jdkirincic@gmail.com>
 Description: A DBI interface for Tableau's Hyper Data Engine.
@@ -16,9 +16,13 @@ Imports:
     readr,
     fs,
     magrittr
-LinkingTo: Rcpp
+LinkingTo: 
+    Rcpp,
+    testthat,
+    RcppSpdlog
 Suggests: 
     DBItest,
     testthat (>= 2.1.0)
 RoxygenNote: 7.0.2
 Biarch: TRUE
+SystemRequirements: C++17

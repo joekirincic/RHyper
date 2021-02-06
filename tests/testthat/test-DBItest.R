@@ -24,6 +24,7 @@ DBItest::test_result(
     "execute_closed_connection",
     "execute_invalid_connection",
     "send_query_only_one_result_set",
+    "fetch_no_return_value",
     "send_query_params"
   )
 )

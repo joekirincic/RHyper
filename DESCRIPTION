@@ -25,4 +25,4 @@ Suggests:
     testthat (>= 2.1.0)
 RoxygenNote: 7.0.2
 Biarch: TRUE
-SystemRequirements: C++17
+SystemRequirements: C++11

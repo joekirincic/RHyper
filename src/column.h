@@ -4,22 +4,58 @@
 
 #include "hyperapi/hyperapi.hpp"
 #include <vector>
-#include <variant>
-#include <optional>
+#include <chrono>
 #include <Rcpp.h>
+
+inline time_t toUTC(std::tm& timeinfo)
+{
+#ifdef _WIN32
+  std::time_t tt = _mkgmtime(&timeinfo);
+#else
+  time_t tt = timegm(&timeinfo);
+#endif
+  return tt;
+}
+
+inline double get_seconds_since_epoch(
+    int year,
+    int month,
+    int day,
+    int hour,
+    int minute,
+    int second
+) // these are UTC values
+{
+  tm timeinfo1 = tm();
+  timeinfo1.tm_year = year - 1900;
+  timeinfo1.tm_mon = month - 1;
+  timeinfo1.tm_mday = day;
+  timeinfo1.tm_hour = hour;
+  timeinfo1.tm_min = minute;
+  timeinfo1.tm_sec = second;
+  tm timeinfo = timeinfo1;
+  time_t tt = toUTC(timeinfo);
+  std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(tt);
+  auto seconds_since_epoch = std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch()).count();
+  return seconds_since_epoch;
+};
+
 
 namespace RHyper {
 
-typedef std::variant
-<
-  std::optional<int>,
-  std::optional<int64_t>,
-  std::optional<bool>,
-  std::optional<double>,
-  std::optional<std::string>,
-  std::optional<hyperapi::Date>,
-  std::optional<hyperapi::Timestamp>
-> hyper_data;
+/*
+ * typdef below is no longer needed.
+ */
+// typedef std::variant
+// <
+//   hyperapi::optional<int>,
+//   hyperapi::optional<int64_t>,
+//   hyperapi::optional<bool>,
+//   hyperapi::optional<double>,
+//   hyperapi::optional<std::string>,
+//   hyperapi::optional<hyperapi::Date>,
+//   hyperapi::optional<hyperapi::Timestamp>
+// > hyper_data;
 
 class base_column {
 public:
@@ -41,14 +77,14 @@ public:
 class integer_column: public base_column {
 private:
   int growth_factor = 1;
-  std::vector<std::optional<int>> data;
+  std::vector<hyperapi::optional<int>> data;
 public:
   void ingest(const hyperapi::Value& v){
     if(data.size() == data.capacity()){
       growth_factor++;
       data.reserve(data.size() * growth_factor);
     }
-    data.push_back(v.get<std::optional<int>>());
+    data.push_back(v.get<hyperapi::optional<int>>());
   };
   Rcpp::RObject to_sexp(){
     Rcpp::IntegerVector out = Rcpp::no_init(data.size());
@@ -66,14 +102,14 @@ public:
 class double_column: public base_column {
 private:
   int growth_factor = 1;
-  std::vector<std::optional<double>> data;
+  std::vector<hyperapi::optional<double>> data;
 public:
   void ingest(const hyperapi::Value& v){
     if(data.size() == data.capacity()){
       growth_factor++;
       data.reserve(data.size() * growth_factor);
     }
-    data.push_back(v.get<std::optional<double>>());
+    data.push_back(v.get<hyperapi::optional<double>>());
   };
   Rcpp::RObject to_sexp(){
     Rcpp::DoubleVector out = Rcpp::no_init(data.size());
@@ -91,14 +127,14 @@ public:
 class bool_column: public base_column {
 private:
   int growth_factor = 1;
-  std::vector<std::optional<bool>> data;
+  std::vector<hyperapi::optional<bool>> data;
 public:
   void ingest(const hyperapi::Value& v){
     if(data.size() == data.capacity()){
       growth_factor++;
       data.reserve(data.size() * growth_factor);
     }
-    data.push_back(v.get<std::optional<bool>>());
+    data.push_back(v.get<hyperapi::optional<bool>>());
   };
   Rcpp::RObject to_sexp(){
     Rcpp::LogicalVector out = Rcpp::no_init(data.size());
@@ -116,14 +152,14 @@ public:
 class string_column: public base_column {
 private:
   int growth_factor = 1;
-  std::vector<std::optional<std::string>> data;
+  std::vector<hyperapi::optional<std::string>> data;
 public:
   void ingest(const hyperapi::Value& v){
     if(data.size() == data.capacity()){
       growth_factor++;
       data.reserve(data.size() * growth_factor);
     }
-    data.push_back(v.get<std::optional<std::string>>());
+    data.push_back(v.get<hyperapi::optional<std::string>>());
   };
   Rcpp::RObject to_sexp(){
     Rcpp::CharacterVector out = Rcpp::no_init(data.size());
@@ -141,14 +177,14 @@ public:
 class date_column: public base_column {
 private:
   int growth_factor = 1;
-  std::vector<std::optional<hyperapi::Date>> data;
+  std::vector<hyperapi::optional<hyperapi::Date>> data;
 public:
   void ingest(const hyperapi::Value& v){
     if(data.size() == data.capacity()){
       growth_factor++;
       data.reserve(data.size() * growth_factor);
     }
-    data.push_back(v.get<std::optional<hyperapi::Date>>());
+    data.push_back(v.get<hyperapi::optional<hyperapi::Date>>());
   };
   Rcpp::RObject to_sexp(){
     Rcpp::DateVector out(data.size());
@@ -167,21 +203,30 @@ public:
 class timestamp_column: public base_column {
 private:
   int growth_factor = 1;
-  std::vector<std::optional<hyperapi::Timestamp>> data;
+  std::vector<hyperapi::optional<hyperapi::Timestamp>> data;
 public:
   void ingest(const hyperapi::Value& v){
     if(data.size() == data.capacity()){
       growth_factor++;
       data.reserve(data.size() * growth_factor);
     }
-    data.push_back(v.get<std::optional<hyperapi::Timestamp>>());
+    data.push_back(v.get<hyperapi::optional<hyperapi::Timestamp>>());
   };
   Rcpp::RObject to_sexp(){
     Rcpp::DatetimeVector out(data.size());
     for(int i = 0; i < data.size(); i++){
       if(data[i]){
         auto dt = data[i].value();
-        out[i] = Rcpp::Datetime(dt.toString());
+        auto seconds_since_epoch = get_seconds_since_epoch(
+          dt.getDate().getYear(),
+          dt.getDate().getMonth(),
+          dt.getDate().getDay(),
+          dt.getTime().getHour(),
+          dt.getTime().getMinute(),
+          dt.getTime().getSecond()
+        );
+        out[i] = Rcpp::Datetime(seconds_since_epoch);
+        // out[i] = Rcpp::Datetime(dt.toString());
       }else{
         out[i] = NA_REAL;
       }
@@ -212,7 +257,7 @@ public:
 //     return *this;
 //   };
 //   void ingest(const hyperapi::Value& x){
-//     contents.push_back(x.get<std::optional<int>>());
+//     contents.push_back(x.get<hyperapi::optional<int>>());
 //   };
 //   Rcpp::RObject get_r_vector(){
 //     switch(col_type){
@@ -224,7 +269,7 @@ public:
 //         contents.begin(),
 //         contents.end(),
 //         r_vec.begin(),
-//         [](hyper_data x){ return (std::get<std::optional<int>>(x)).value_or(NA_INTEGER); }
+//         [](hyper_data x){ return (std::get<hyperapi::optional<int>>(x)).value_or(NA_INTEGER); }
 //       );
 //       return r_vec;
 //     }

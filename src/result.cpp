@@ -13,6 +13,7 @@ colset_t RHyper::result::infer_colset(){
 
   for(int j = 0; j < schema.getColumnCount(); j++){
     auto t = schema.getColumn(j).getType().getTag();
+    // Rcpp::Rcout << schema.getColumn(j).getType().toString() << std::endl;
     switch(t){
     case hyperapi::TypeTag::Int:
     {
@@ -47,9 +48,11 @@ colset_t RHyper::result::infer_colset(){
       break;
     }
     case hyperapi::TypeTag::Timestamp:
+    case hyperapi::TypeTag::TimestampTZ:
     {
       auto col = std::unique_ptr<RHyper::timestamp_column>(new RHyper::timestamp_column());
       out.push_back(std::move(col));
+      break;
     }
     default:
     {
@@ -100,14 +103,17 @@ Rcpp::List fetch_rows(SEXP res_, Rcpp::Nullable<int> n_ = R_NilValue){
 // [[Rcpp::export]]
 SEXP has_completed2(SEXP res_){
 
-  Rcpp::XPtr<result_ptr> res(res_);
-  bool out = res->get()->is_tapped();
-  return Rcpp::wrap(out);
+  auto res = Rcpp::XPtr<result_ptr>(res_).get()->get();
+  bool out = res->is_open();
+  return Rcpp::wrap(!out);
 
 }
 
 // [[Rcpp::export]]
 bool is_valid_result(SEXP res_){
   auto res = Rcpp::XPtr<result_ptr>(res_).get();
-  return res;
+  if(!res){
+    return false;
+  }
+  return res->get()->check_validity();
 }

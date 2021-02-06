@@ -27,7 +27,7 @@ setMethod("dbFetch", "HyperResult", function(res, n = -1, ...) {
     stop("`n` must be a single whole number >= -1.")
   }
 
-  out <- fetch_rows(res_ = res@ptr, n_ = n) %>% as.data.frame()
+  out <- fetch_rows(res_ = res@ptr, n_ = n) %>% as.data.frame(stringsAsFactors = FALSE)
 
   return(out)
 

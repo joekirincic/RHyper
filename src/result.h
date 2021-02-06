@@ -17,6 +17,7 @@ private:
   std::unique_ptr<hyperapi::ResultIterator> iter_start_ptr = std::unique_ptr<hyperapi::ResultIterator>(nullptr);
   std::unique_ptr<hyperapi::ResultIterator> iter_end_ptr = std::unique_ptr<hyperapi::ResultIterator>(nullptr);
   std::string statement;
+  bool is_valid = true;
 public:
   result(){};
   result(result const &)=delete;
@@ -75,14 +76,21 @@ public:
     Rcpp::List out = Rcpp::wrap(tmp);
     out.names() = col_names;
 
+    // If the result set is tapped, update the status of the
+    // result (e.g. is_active = false).
+
     return out;
   };
   void close(){
     res_ptr->close();
+    is_valid = false;
   };
   void close_and_release(){
     res_ptr->close();
-    res_ptr.release();
+    is_valid = false;
+  };
+  bool check_validity(){
+    return is_valid;
   };
   ~result(){};
 };

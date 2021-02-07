@@ -5,6 +5,7 @@
 #include "hyperapi/hyperapi.hpp"
 #include <vector>
 #include <chrono>
+#include <ctime>
 #include <Rcpp.h>
 
 inline time_t toUTC(std::tm& timeinfo)
@@ -93,6 +94,31 @@ public:
         out[i] = data[i].value();
       }else{
         out[i] = NA_INTEGER;
+      }
+    }
+    return out;
+  };
+};
+
+class numeric_column: public base_column {
+private:
+  int growth_factor = 1;
+  std::vector<hyperapi::optional<double>> data;
+public:
+  void ingest(const hyperapi::Value& v){
+    if(data.size() == data.capacity()){
+      growth_factor++;
+      data.reserve(data.size() * growth_factor);
+    }
+    data.push_back(v.get<hyperapi::optional<double>>());
+  };
+  Rcpp::RObject to_sexp(){
+    Rcpp::NumericVector out = Rcpp::no_init(data.size());
+    for(int i = 0; i < data.size(); i++){
+      if(data[i]){
+        out[i] = data[i].value();
+      }else{
+        out[i] = NA_REAL;
       }
     }
     return out;
@@ -200,6 +226,35 @@ public:
   };
 };
 
+class time_column: public base_column {
+private:
+  int growth_factor = 1;
+  std::vector<hyperapi::optional<hyperapi::Time>> data;
+public:
+  void ingest(const hyperapi::Value& v){
+    if(data.size() == data.capacity()){
+      growth_factor++;
+      data.reserve(data.size() * growth_factor);
+    }
+    data.push_back(v.get<hyperapi::optional<hyperapi::Time>>());
+  };
+  Rcpp::RObject to_sexp(){
+    Rcpp::DoubleVector out(data.size());
+    for(int i = 0; i < data.size(); i++){
+      if(data[i]){
+        auto t = data[i].value();
+        double t_dbl = t.getHour()*3600 + t.getMinute()*60 + t.getSecond();
+        out[i] = t_dbl;
+      }else{
+        out[i] = NA_REAL;
+      }
+    }
+    out.attr("class") = Rcpp::CharacterVector::create("hms", "difftime");
+    out.attr("units") = "seconds";
+    return out;
+  };
+};
+
 class timestamp_column: public base_column {
 private:
   int growth_factor = 1;
@@ -235,51 +290,41 @@ public:
   };
 };
 
-// typedef void (column::*col_read_fn)(const hyperapi::Value);
-//
-// class column {
-// private:
-//   hyperapi::TypeTag col_type;
-//   std::list<hyper_data> contents;
-// public:
-//   column(column const &)=delete;
-//   column &operator=(column const &)=delete;
-//   column(hyperapi::TypeTag t):
-//     col_type(std::move(t)) {};
-//   column(column &&o):
-//     col_type(std::move(o.col_type)), contents(o.contents) {};
-//   column &operator=(column &&o){
-//     if (this != &o)
-//     {
-//       col_type = std::move(o.col_type);
-//       contents = std::move(o.contents);
-//     }
-//     return *this;
-//   };
-//   void ingest(const hyperapi::Value& x){
-//     contents.push_back(x.get<hyperapi::optional<int>>());
-//   };
-//   Rcpp::RObject get_r_vector(){
-//     switch(col_type){
-//     case hyperapi::TypeTag::Int:
-//     {
-//       R_xlen_t n = contents.size();
-//       Rcpp::IntegerVector r_vec(n);
-//       std::transform(
-//         contents.begin(),
-//         contents.end(),
-//         r_vec.begin(),
-//         [](hyper_data x){ return (std::get<hyperapi::optional<int>>(x)).value_or(NA_INTEGER); }
-//       );
-//       return r_vec;
-//     }
-//     default:
-//       {
-//         Rcpp::stop("Unsupported type.");
-//       }
-//     };
-//   };
-// };
+class timestamp2_column: public base_column {
+private:
+  int growth_factor = 1;
+  std::vector<hyperapi::optional<hyperapi::Timestamp>> data;
+public:
+  void ingest(const hyperapi::Value& v){
+    if(data.size() == data.capacity()){
+      growth_factor++;
+      data.reserve(data.size() * growth_factor);
+    }
+    data.push_back(v.get<hyperapi::optional<hyperapi::Timestamp>>());
+  };
+  Rcpp::RObject to_sexp(){
+    Rcpp::DatetimeVector out(data.size());
+    for(int i = 0; i < data.size(); i++){
+      if(data[i]){
+        auto dt = data[i].value();
+        struct tm t = {
+          .tm_sec = dt.getTime().getSecond(),
+          .tm_min = dt.getTime().getMinute(),
+          .tm_hour = dt.getTime().getHour(),
+          .tm_mday = dt.getDate().getDay(),
+          .tm_mon = dt.getDate().getMonth() - 1,
+          .tm_year = dt.getDate().getYear() - 1900
+        };
+        time_t sauce = mktime(&t);
+        out[i] = Rcpp::Datetime(double(sauce));
+        // out[i] = Rcpp::Datetime(dt.toString());
+      }else{
+        out[i] = NA_REAL;
+      }
+    }
+    return out;
+  };
+};
 
 }
 

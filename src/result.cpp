@@ -28,6 +28,11 @@ colset_t RHyper::result::infer_colset(){
       break;
     }
     case hyperapi::TypeTag::Numeric:
+    {
+      auto col = std::unique_ptr<RHyper::base_column>(new RHyper::numeric_column());
+      out.push_back(std::move(col));
+      break;
+    }
     case hyperapi::TypeTag::BigInt:
     case hyperapi::TypeTag::Double:
     {
@@ -47,10 +52,16 @@ colset_t RHyper::result::infer_colset(){
       out.push_back(std::move(col));
       break;
     }
+    case hyperapi::TypeTag::Time:
+    {
+      auto col = std::unique_ptr<RHyper::time_column>(new RHyper::time_column());
+      out.push_back(std::move(col));
+      break;
+    }
     case hyperapi::TypeTag::Timestamp:
     case hyperapi::TypeTag::TimestampTZ:
     {
-      auto col = std::unique_ptr<RHyper::timestamp_column>(new RHyper::timestamp_column());
+      auto col = std::unique_ptr<RHyper::timestamp2_column>(new RHyper::timestamp2_column());
       out.push_back(std::move(col));
       break;
     }
